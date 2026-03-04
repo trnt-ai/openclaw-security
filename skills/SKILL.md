@@ -38,22 +38,13 @@ securely in the OS keychain and refreshed transparently.
 
 ## Setup
 
-Install the package and run setup:
+Install via ClawHub:
 
 ```
-pip install trentai-mcp    # or: uv pip install trentai-mcp
-openclaw-trent-setup
+clawhub install trent-openclaw-security
 ```
 
-The `openclaw-trent-setup` command:
-
-1. **Installs this skill** — copies `SKILL.md` to
-   `~/.openclaw/skills/trent-openclaw-security/`
-2. **Authenticates with Trent** — opens a browser for OAuth login if needed
-3. **Runs an initial security audit** — immediately analyzes your config and
-   shows findings
-
-To uninstall: `openclaw-trent-uninstall`
+This installs the skill and the `trent-openclaw-audit` CLI automatically.
 
 ## When to Use
 
@@ -140,7 +131,7 @@ re-audit immediately.
 The package isn't installed. Tell the user:
 > I need `trent-openclaw-audit` to run the security audit. Install it with:
 > `pip install trentai-mcp` (or `uv pip install trentai-mcp`)
-> Then run `openclaw-trent-setup` to complete the setup.
+> Then reinstall the skill: `clawhub install trent-openclaw-security`
 
 **"Authentication required" / browser opens:**
 First-time use requires OAuth login. Tell the user:
