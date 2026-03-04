@@ -1,7 +1,7 @@
 ---
 name: trent-openclaw-security
 description: Audit your OpenClaw deployment for security risks using Trent AppSec Advisor
-version: 2.0.0
+version: 2.0.1
 homepage: https://trent.ai
 user-invocable: true
 metadata:
@@ -13,7 +13,7 @@ metadata:
     install:
       - kind: uv
         package: trentai-mcp
-        bins: [openclaw-trent-setup, trent-openclaw-audit]
+        bins: [trent-openclaw-audit]
 ---
 
 # Trent OpenClaw Security Audit
