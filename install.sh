@@ -80,7 +80,7 @@ echo "    trent-api-key create"
 echo ""
 
 printf "Paste your API key: "
-read -r API_KEY
+read -r API_KEY < /dev/tty
 
 if [ -z "$API_KEY" ]; then
     error "No API key provided. Run openclaw-trent-setup --api-key <key> when ready."
