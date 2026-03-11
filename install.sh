@@ -81,7 +81,7 @@ if [ -r /dev/tty ]; then
     echo ""
 
     printf "Paste your API key: " > /dev/tty
-    read -rs API_KEY < /dev/tty
+    read -r API_KEY < /dev/tty
     echo "" > /dev/tty
 else
     error "No TTY available. Run: openclaw-trent-setup --api-key <key>"
@@ -95,4 +95,17 @@ fi
 
 # --- Run setup ---
 
-openclaw-trent-setup --api-key "$API_KEY" --yes
+# Ask if user wants to run the initial security audit
+RUN_AUDIT="no"
+if [ -r /dev/tty ]; then
+    printf "Run a security audit now? [y/N] " > /dev/tty
+    read -r RUN_AUDIT < /dev/tty
+fi
+
+if [[ "$RUN_AUDIT" =~ ^[Yy]$ ]]; then
+    openclaw-trent-setup --api-key "$API_KEY" --yes
+else
+    openclaw-trent-setup --api-key "$API_KEY" --yes --skip-audit
+    echo ""
+    info "To run an audit later: trent-openclaw-audit"
+fi
