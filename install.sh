@@ -73,14 +73,20 @@ success "trentai-mcp installed!"
 
 # --- Get API key ---
 
-echo ""
-info "You need a Trent API key to continue."
-echo "  If you don't have one, generate it on a machine with a browser:"
-echo "    trent-api-key create"
-echo ""
+if [ -r /dev/tty ]; then
+    echo ""
+    info "You need a Trent API key to continue."
+    echo "  If you don't have one, generate it on a machine with a browser:"
+    echo "    trent-api-key create"
+    echo ""
 
-printf "Paste your API key: "
-read -r API_KEY < /dev/tty
+    printf "Paste your API key: " > /dev/tty
+    read -rs API_KEY < /dev/tty
+    echo "" > /dev/tty
+else
+    error "No TTY available. Run: openclaw-trent-setup --api-key <key>"
+    exit 0
+fi
 
 if [ -z "$API_KEY" ]; then
     error "No API key provided. Run openclaw-trent-setup --api-key <key> when ready."
