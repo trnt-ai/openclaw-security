@@ -71,6 +71,14 @@ fi
 
 success "trentai-mcp installed!"
 
+if command -v trent-openclaw-sysinfo &> /dev/null; then
+    success "System analysis tool available: trent-openclaw-sysinfo"
+fi
+
+if command -v trent-openclaw-package-skills &> /dev/null; then
+    success "Skill packaging tool available: trent-openclaw-package-skills"
+fi
+
 # --- Get API key ---
 
 if [ -r /dev/tty ]; then
