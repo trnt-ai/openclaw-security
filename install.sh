@@ -84,8 +84,8 @@ fi
 if [ -r /dev/tty ]; then
     echo ""
     info "You need a Trent API key to continue."
-    echo "  If you don't have one, generate it on a machine with a browser:"
-    echo "    trent-api-key create"
+    echo "  If you don't have one, visit https://app.trent.ai to generate one."
+    echo "  Log out if you don't see the 'Get OpenClaw Access' button."
     echo ""
 
     printf "Paste your API key: " > /dev/tty
