@@ -5,7 +5,7 @@ We've spent years securing modern and AI stacks for fast-moving teams. Sharing s
 ### Setup
 
 - **Requires:** A running OpenClaw setup with `~/.openclaw`  directory.
-1. **Get an API key** at [app.trent.ai](http://app.trent.ai) → **Get OpenClaw Access**.
+1. **Get an API key** at [trent.ai](https://trent.ai/openclaw/) → **Get OpenClaw Access**.
 2. **Install the [skill](https://clawhub.ai/trent-ai-release/trentclaw)** (use `--force` to upgrade):
     
     ```bash
@@ -24,7 +24,7 @@ The audit checks gateway security, tool permissions, MCP servers, plugins, chann
 
 ### API keys
 
-Create, view, revoke, and rotate keys at [app.trent.ai](http://app.trent.ai). After rotating, update the key in **Skills → Workplace Skills → Set Key**.
+Create, view, revoke, and rotate keys at [trent.ai](https://trent.ai/openclaw/). After rotating, update the key in **Skills → Workplace Skills → Set Key**.
 
 ### Privacy
 
@@ -37,7 +37,7 @@ All secrets are redacted as `[REDACTED]` before leaving your machine.
 
 | **Error** | **Fix** |
 | --- | --- |
-| `401 Unauthorized` | Regenerate key at [app.trent.ai](http://app.trent.ai). |
+| `401 Unauthorized` | Regenerate key at [trent.ai](https://trent.ai/openclaw/). |
 | `OpenClaw config not found` | Verify `~/.openclaw` exists. |
 | Audit times out | Retry or check network connectivity. |
 | Skill not showing | Start a new agent session. |
