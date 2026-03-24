@@ -1,7 +1,7 @@
 ---
-name: trent-openclaw-security-assessment
-description: Assess your OpenClaw deployment against security risks using Trent.
-version: 1.0.1
+name: trent-security-assessment
+description: Assess your Agent deployment against security risks using Trent.
+version: 1.1.1
 homepage: https://trent.ai
 user-invocable: true
 tags:
@@ -32,7 +32,7 @@ chained attack paths, and provides severity-rated findings with fixes.
 
 All tools are bundled — no external installer needed.
 
-Set the `TRENT_API_KEY` environment variable. Get a key at https://app.trent.ai
+Set the `TRENT_API_KEY` environment variable. Get a key at https://trent.ai/openclaw/
 
 ## Instructions
 
