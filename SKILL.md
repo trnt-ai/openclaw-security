@@ -1,5 +1,5 @@
 ---
-name: trent-security-assessment
+name: trent-openclaw-security
 description: Assess your Agent deployment against security risks using Trent.
 version: 1.1.1
 homepage: https://trent.ai

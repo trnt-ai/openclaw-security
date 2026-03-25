@@ -10,6 +10,9 @@ def build_skill_analysis_prompt(upload_summary: dict) -> str:
     summary = upload_summary.get("summary", {})
 
     uploaded_skills = [s for s in skills if s.get("status") in ("uploaded", "skipped")]
+    # s['name'] is the human-readable label registered with the backend in Phase 2
+    # (passed as the `name` argument to prepare_document_upload in upload_skills.py).
+    # It must match so the backend can correlate these prompts with the uploaded documents.
     skill_list = "\n".join(f"- {s['name']} ({s['type']})" for s in uploaded_skills)
     total = summary.get("uploaded", 0) + summary.get("skipped", 0)
 
@@ -25,7 +28,12 @@ def build_skill_analysis_prompt(upload_summary: dict) -> str:
 
 
 def build_per_skill_analysis_prompt(skill: dict) -> str:
-    """Build a chat prompt requesting analysis of a single uploaded skill."""
+    """Build a chat prompt requesting analysis of a single uploaded skill.
+
+    skill['name'] must match the document name registered with the backend in Phase 2
+    (i.e., the `name` passed to prepare_document_upload() in upload_skills.py).
+    Both use the human-readable label from SKILL.md frontmatter (not the filesystem slug).
+    """
     return (
         f"Please analyse the uploaded OpenClaw skill package '{skill['name']}' "
         f"(type: {skill['type']}) for security risks.\n\n"

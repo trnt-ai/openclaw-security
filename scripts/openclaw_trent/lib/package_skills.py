@@ -399,6 +399,7 @@ def scan_workspace(workspace: pathlib.Path | None = None) -> list[dict]:
     skills_dir = ws / "skills"
     if skills_dir.is_dir():
         for skill_dir in find_skill_dirs_recursive(skills_dir):
+            # slug: filesystem directory name — stable, unique, used to name the .skill archive.
             slug = skill_dir.name
             skill_file = output_dir / f"{slug}.skill"
             already_exists = skill_file.exists()
@@ -410,6 +411,9 @@ def scan_workspace(workspace: pathlib.Path | None = None) -> list[dict]:
 
             results.append(
                 {
+                    # name: human-readable label from SKILL.md frontmatter; falls back to slug.
+                    # IMPORTANT: upload_skills.py uses this as the backend document identifier,
+                    # and Phase 3 prompts reference the skill by this value — keep them in sync.
                     "name": fm.get("name", slug),
                     "slug": slug,
                     "type": "installed-skill",
@@ -439,6 +443,7 @@ def scan_workspace(workspace: pathlib.Path | None = None) -> list[dict]:
         if entry in packaged_paths:
             continue
 
+        # slug: filesystem entry name (dir name or file stem) — used to name the .skill archive.
         slug = entry.stem if entry.is_file() else entry.name
         skill_file = output_dir / f"{slug}.skill"
         already_exists = skill_file.exists()
@@ -458,6 +463,9 @@ def scan_workspace(workspace: pathlib.Path | None = None) -> list[dict]:
             size, redactions = zip_directory(entry, skill_file)
             results.append(
                 {
+                    # name: human-readable label from SKILL.md frontmatter; falls back to slug.
+                    # IMPORTANT: upload_skills.py uses this as the backend document identifier,
+                    # and Phase 3 prompts reference the skill by this value — keep them in sync.
                     "name": fm.get("name", slug),
                     "slug": slug,
                     "type": "skill-directory" if is_skill else "code-project",
@@ -477,6 +485,7 @@ def scan_workspace(workspace: pathlib.Path | None = None) -> list[dict]:
             size, redactions = zip_file(entry, skill_file)
             results.append(
                 {
+                    # name == slug for standalone scripts: no SKILL.md means no frontmatter name.
                     "name": slug,
                     "slug": slug,
                     "type": "standalone-script",
