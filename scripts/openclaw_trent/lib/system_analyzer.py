@@ -41,7 +41,10 @@ def detect_skills(openclaw_path: Path | None = None) -> dict[str, Any]:
         try:
             for entry in sorted(skills_dir.iterdir()):
                 if entry.is_dir() and not entry.name.startswith("."):
-                    skills.append({"name": entry.name, "source": source})
+                    # Use "slug" (not "name") — entry.name is the filesystem directory name,
+                    # which is the slug. The human-readable name from SKILL.md frontmatter
+                    # is NOT available here because detect_skills() does not read file contents.
+                    skills.append({"slug": entry.name, "source": source})
         except OSError as e:
             errors.append(f"Cannot read {skills_dir}: {e}")
 

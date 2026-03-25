@@ -57,7 +57,12 @@ def upload_packaged_skills(
     counts = {"uploaded": 0, "skipped": 0, "failed": 0, "too_large": 0}
 
     for i, skill in enumerate(skills):
+        # skill_name: human-readable label from SKILL.md frontmatter (or slug if no frontmatter).
+        # This is the document identifier used with the backend API — Phase 3 prompts reference
+        # skills by this value, so it must be consistent end-to-end.
         skill_name = skill["name"]
+        # skill_slug: filesystem directory/file name — unique on disk, used only for local
+        # logging and result dict keys. NOT used as the backend document identifier.
         skill_slug = skill["slug"]
         skill_path = Path(skill["skill_file_path"])
         skill_size = skill["skill_size_bytes"]
@@ -105,7 +110,11 @@ def upload_packaged_skills(
 
         try:
             upload_info = trent_client.prepare_document_upload(
-                name=skill_slug,
+                # Use skill_name (human-readable label) as the document identifier so that
+                # Phase 3 chat prompts — which reference skill['name'] — match what the
+                # backend has stored. Using skill_slug here would cause a name mismatch
+                # when slug ≠ name (e.g. dir "trentclaw" vs SKILL.md name "Trent OpenClaw…").
+                name=skill_name,
                 doc_type="openclaw_config",
                 doc_format="zip",
                 digest=digest,
