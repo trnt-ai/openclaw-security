@@ -52,11 +52,11 @@ It does not just flag isolated misconfigurations. It models how configuration, p
 
 - **Requires:** A running OpenClaw setup with `~/.openclaw` directory.
 
-1. **Get an API key** at [trent.ai](https://trent.ai/openclaw/) → **Get OpenClaw Access**.
-2. **Install the [skill](https://clawhub.ai/trent-ai-release/trentclaw)** (use `--force` to upgrade):
+1. **Get an API key** at [trent.ai](https://trent.ai/openclaw/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw) → **Get OpenClaw Access**.
+2. **Install the [skill](https://clawhub.ai/trent-ai-release/trentclaw)** (use `openclaw skills update trentclaw` to upgrade):
 
     ```bash
-    npx clawhub install trentclaw
+    openclaw skills install trentclaw
     ```
 
 3. **Set your key:**
@@ -104,7 +104,7 @@ For more provider options (1Password, HashiCorp Vault, SOPS, and others), see th
 
 ## API keys
 
-Create, view, revoke, and rotate keys at [trent.ai](https://trent.ai/openclaw/). After rotating, run the setup steps above again with the new key.
+Create, view, revoke, and rotate keys at [trent.ai](https://trent.ai/openclaw/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw). After rotating, run the setup steps above again with the new key.
 
 ## Privacy
 
@@ -120,7 +120,7 @@ Trent does not store your configuration data after the assessment completes.
 
 | **Error** | **Fix** |
 | --- | --- |
-| `401 Unauthorized` | Regenerate key at [trent.ai](https://trent.ai/openclaw/). |
+| `401 Unauthorized` | Regenerate key at [trent.ai](https://trent.ai/openclaw/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw). |
 | `OpenClaw config not found` | Verify `~/.openclaw` exists. |
 | Audit times out | Retry or check network connectivity. |
 | Skill not showing | Start a new agent session. |
@@ -132,4 +132,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 ## **About Trent**
 
 Trent secures agentic systems across code, infrastructure, workflows, and runtime behavior. The OpenClaw skill focuses on one layer of that stack: the local agent environment where permissions, tools, secrets, and remote integrations meet.
-To learn more, visit [trent.ai](https://trent.ai/).
+To learn more, visit [trent.ai](https://trent.ai/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw).
