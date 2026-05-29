@@ -12,6 +12,7 @@ Handles:
 import json
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from openclaw_trent import __version__
@@ -23,6 +24,10 @@ from openclaw_trent import __version__
 _DEFAULT_CHAT_URL = "https://chat.trent.ai"
 _DEFAULT_AGENT_URL = "https://api.trent.ai"
 
+_RENEWAL_URL_FALLBACK = "https://app.trent.ai/api-keys/renew?client=openclaw"
+_EXPIRY_WARNING_WINDOW_SECONDS = 7 * 86400
+_EXPIRY_WARNING_MAX_SECONDS = 365 * 86400
+
 
 def _get_chat_url() -> str:
     return os.environ.get("TRENT_CHAT_API_URL") or _DEFAULT_CHAT_URL
@@ -30,6 +35,62 @@ def _get_chat_url() -> str:
 
 def _get_agent_url() -> str:
     return os.environ.get("TRENT_AGENT_API_URL") or _DEFAULT_AGENT_URL
+
+
+def _is_trusted_trent_url(url: str) -> bool:
+    # Use urlparse so fragments/query strings/userinfo do not bypass the
+    # host-allowlist via parser-confusion (e.g. "https://evil.com#@app.trent.ai").
+    if not isinstance(url, str):
+        return False
+    url = url.strip()
+    if not url.startswith("https://"):
+        return False
+    try:
+        parsed = urllib.parse.urlparse(url)
+    except (ValueError, AttributeError):
+        return False
+    if parsed.scheme != "https":
+        return False
+    if parsed.username or parsed.password:
+        return False
+    host = (parsed.hostname or "").lower()
+    if not host:
+        return False
+    if host == "localhost":
+        return True
+    return host == "trent.ai" or host.endswith(".trent.ai")
+
+
+def _extract_expiration_warning(headers) -> str | None:
+    """Read advisory API-key-expiry headers from a Trent API response.
+
+    Advisory only; a TLS compromise allows false warnings — acceptable per
+    TRE-1706 AppSec review item #5. Guidance URLs are constrained to the
+    trent.ai domain to reduce phishing risk from MITM-injected values; if
+    the server-provided URL is not on the allowlist, the renewal fallback
+    constant is used instead.
+    """
+    if headers is None or not hasattr(headers, "get"):
+        return None
+
+    guidance = headers.get("X-Trent-API-Key-Expired-Key-Guidance")
+    if guidance:
+        renewal_url = guidance if _is_trusted_trent_url(guidance) else _RENEWAL_URL_FALLBACK
+        return f"Trent API key has expired. Renew at: {renewal_url}"
+
+    expires_in = headers.get("X-Trent-API-Key-Expires-In")
+    if not expires_in:
+        return None
+    try:
+        seconds = int(expires_in)
+    except (TypeError, ValueError):
+        return None
+    if seconds <= 0 or seconds > _EXPIRY_WARNING_MAX_SECONDS:
+        return None
+    if seconds > _EXPIRY_WARNING_WINDOW_SECONDS:
+        return None
+    days = max(1, seconds // 86400)
+    return f"Trent API key expires in {days} day(s). Renew at {_RENEWAL_URL_FALLBACK}"
 
 
 def _get_api_key() -> str | None:
@@ -107,9 +168,11 @@ def chat(
     out_path = output_file or tempfile.mktemp(prefix="trent_chat_", suffix=".json")
     content_chunks: list[str] = []
     returned_thread_id: str | None = thread_id
+    expiration_warning: str | None = None
 
     try:
         with urllib.request.urlopen(req, timeout=300) as resp, open(out_path, "w") as out:
+            expiration_warning = _extract_expiration_warning(resp.headers)
             for raw_line in resp:
                 line = raw_line.decode("utf-8").rstrip("\r\n")
                 if not line:
@@ -150,14 +213,21 @@ def chat(
             body = e.read().decode("utf-8", errors="replace")
         except Exception:
             pass
+        error_warning = _extract_expiration_warning(getattr(e, "headers", None))
         if e.code == 401:
-            return {
+            result = {
                 "content": "API key rejected (expired or revoked). "
                 "Generate a new key at https://app.trent.ai.",
                 "error": True,
                 "output_file": out_path,
             }
-        return {"content": f"API error {e.code}: {body}", "error": True, "output_file": out_path}
+            if error_warning:
+                result["expiration_warning"] = error_warning
+            return result
+        result = {"content": f"API error {e.code}: {body}", "error": True, "output_file": out_path}
+        if error_warning:
+            result["expiration_warning"] = error_warning
+        return result
 
     except TimeoutError:
         return {
@@ -169,11 +239,14 @@ def chat(
     except Exception as e:
         return {"content": f"An error occurred: {e}", "error": True, "output_file": out_path}
 
-    return {
+    result = {
         "content": "".join(content_chunks),
         "thread_id": returned_thread_id,
         "output_file": out_path,
     }
+    if expiration_warning:
+        result["expiration_warning"] = expiration_warning
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -182,9 +255,14 @@ def chat(
 
 
 def _api_request(method: str, endpoint: str, json_data: dict | None = None) -> dict:
-    """Make an authenticated JSON request to the Trent agent API."""
+    """Make an authenticated JSON request to the Trent agent API.
+
+    Returns the parsed JSON response. When the server emits an advisory
+    API-key-expiry header, the returned dict gains an ``expiration_warning``
+    key so the OpenClaw caller can surface it without changing the call site.
+    """
     auth_header = _get_auth_header()
-    url = f"{_get_agent_url()}/v1/humber-agent{endpoint}"
+    url = f"{_get_agent_url()}/v1/trent-agent{endpoint}"
     payload = json.dumps(json_data).encode() if json_data is not None else None
 
     headers: dict[str, str] = {
@@ -194,7 +272,11 @@ def _api_request(method: str, endpoint: str, json_data: dict | None = None) -> d
 
     req = urllib.request.Request(url, data=payload, headers=headers, method=method)
     with urllib.request.urlopen(req, timeout=60) as resp:
-        return json.loads(resp.read().decode())
+        data = json.loads(resp.read().decode())
+        warning = _extract_expiration_warning(resp.headers)
+        if warning and isinstance(data, dict):
+            data["expiration_warning"] = warning
+        return data
 
 
 def prepare_document_upload(

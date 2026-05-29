@@ -1,7 +1,7 @@
 ---
 name: trent-openclaw-security
 description: Assess your Agent deployment against security risks using Trent.
-version: 1.3.0
+version: 1.4.0
 homepage: https://trent.ai
 user-invocable: true
 tags:
