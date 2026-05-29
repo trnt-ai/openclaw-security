@@ -107,6 +107,14 @@ EXCLUDED_EXTENSIONS = {
     ".pfx",
     ".jks",  # crypto keys/certs
     ".env",  # environment files (secrets.env, prod.env, etc.)
+    ".exe",
+    ".dll",
+    ".so",
+    ".dylib",  # executables/shared libs
+    ".swp",
+    ".swo",  # editor swap files
+    ".bak",
+    ".orig",  # backup/merge artifacts
 }
 
 # Filenames that are never included in ZIPs (may contain secrets)
@@ -117,7 +125,30 @@ EXCLUDED_FILENAMES = {
     ".env.development",
     "credentials.json",
     "service-account.json",
+    # SSH keys
+    "id_rsa",
+    "id_ed25519",
+    "id_ecdsa",
+    "id_dsa",
+    "id_rsa.pub",
+    "id_ed25519.pub",
+    "id_ecdsa.pub",
+    "id_dsa.pub",
+    # Credential stores
+    ".pgpass",
+    ".netrc",
+    ".npmrc",
+    ".pypirc",
+    ".git-credentials",
+    ".htpasswd",
+    ".htaccess",
+    # OS artifacts
+    ".ds_store",
+    "desktop.ini",
 }
+
+# Pattern to catch all .env variants (.env.staging, .env.test, .env.qa, etc.)
+_ENV_FILE_RE = re.compile(r"^\.env(\..+)?$", re.IGNORECASE)
 
 # Context-aware key=value pattern: lines like `API_KEY = "sk-..."` or `token: ghp_...`
 # Handles three forms:
@@ -198,7 +229,7 @@ def is_code_file(path: pathlib.Path) -> bool:
 def count_code_files(directory: pathlib.Path) -> int:
     """Recursively count code files, skipping venv-like dirs."""
     count = 0
-    for _root, dirs, files in os.walk(directory):
+    for root, dirs, files in os.walk(directory):
         dirs[:] = [d for d in dirs if not should_skip_dir(d)]
         count += sum(1 for f in files if pathlib.Path(f).suffix.lower() in CODE_EXTENSIONS)
     return count
@@ -304,7 +335,12 @@ def _add_file_to_zip(
 
     # Exclude file types and filenames that commonly contain secrets
     if fp.suffix.lower() in EXCLUDED_EXTENSIONS or fp.name.lower() in EXCLUDED_FILENAMES:
-        logger.debug("Excluded %s (dangerous extension)", arcname)
+        logger.debug("Excluded %s (dangerous extension/filename)", arcname)
+        return 0
+
+    # Catch all .env variants (.env.staging, .env.test, .env.qa, etc.)
+    if _ENV_FILE_RE.match(fp.name):
+        logger.debug("Excluded %s (env file variant)", arcname)
         return 0
 
     file_size = fp.stat().st_size

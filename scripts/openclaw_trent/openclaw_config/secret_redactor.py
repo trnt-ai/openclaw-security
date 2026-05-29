@@ -24,6 +24,7 @@ SECRET_KEY_PATTERNS = [
         r"(webhook[_-]?secret|webhook[_-]?token)",
         r"(database[_-]?url|db[_-]?url|connection[_-]?string)",
         r"(aws[_-]?access|aws[_-]?secret)",
+        r"(token)",
     ]
 ]
 
