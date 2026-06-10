@@ -1,9 +1,11 @@
 # Trent OpenClaw Security Assessment
-Free security assessment for your OpenClaw environment. Find the OpenClaw security issues that isolated checks miss.
+Free security audit for your OpenClaw 🦞 environment. Finds the gaps isolated checks miss: gateway config, tool permissions, MCP servers, skills, and how they chain into attack paths.
 
 Trent audits your OpenClaw environment across gateway configuration, skill permissions, MCP connections, plugins, channel policies, and local file exposure. It correlates those surfaces to identify privilege escalation paths, secret exposure, and multi-step compromise scenarios, then returns prioritized findings with concrete remediation steps.
 
 Why now? We've spent years securing modern and AI stacks for fast-moving teams. Sharing some of those learnings with the OpenClaw community.
+
+> Built by the team that [analyzed all 52,652 ClawHub packages](https://trent.ai/blog/clawhub-by-the-numbers/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw) and ran [behavioral analysis on the 2,354 most popular skills](https://trent.ai/blog/clawhub-ai-agent-security-analysis/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw).
 
 ## What Trent analyzes
 
@@ -34,6 +36,41 @@ OpenClaw environments rarely fail because of one obvious issue in one file. They
 A gateway exposed on the wrong interface may not be critical on its own. A skill with broad filesystem access may not be critical on its own. An MCP server using weak transport may not be critical on its own. In combination, they can create a direct path from prompt input to secret access or arbitrary execution.
 Trent is built to evaluate those interactions.
 It does not just flag isolated misconfigurations. It models how configuration, permissions, connectivity, and data access work together across your OpenClaw setup, then prioritizes findings by exploitability and blast radius.
+
+<div class="oc-compare-table" style="border:2px solid rgb(236,235,235);border-radius:12px;overflow-x:auto;overflow-y:hidden;max-width:760px;width:100%;margin:0 auto;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:rgb(16,9,3);-webkit-overflow-scrolling:touch;">
+  <table style="width:100%;min-width:720px;border-collapse:collapse;table-layout:fixed;">
+    <thead>
+      <tr>
+        <th style="text-align:left;padding:20px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);width:30%;word-break:break-word;">Feature coverage</th>
+        <th style="text-align:center;padding:20px 16px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);width:23.33%;word-break:break-word;">Scans OpenClaw configuration</th>
+        <th style="text-align:center;padding:20px 16px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);width:23.33%;word-break:break-word;">Scans public skills</th>
+        <th style="text-align:center;padding:20px 16px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);width:23.33%;word-break:break-word;">Scans your custom code and skills</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:16px 20px;border-bottom:1px solid rgb(236,235,235);font-weight:600;">
+          <code class="oc-inline-command" style="background:#F7F6F3;padding:3px 8px;border-radius:4px;font-size:14px;white-space:nowrap;">openclaw security audit</code>
+        </td>
+        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
+        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
+        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
+      </tr>
+      <tr style="background:#F7F6F3;">
+        <td style="padding:16px 20px;border-bottom:1px solid rgb(236,235,235);font-weight:600;word-break:break-word;">VirusTotal</td>
+        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
+        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
+        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
+      </tr>
+      <tr>
+        <td style="padding:16px 20px;font-weight:700;color:#F57C33;word-break:break-word;">Trent's Security Assessment Skill</td>
+        <td style="padding:16px;text-align:center;border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
+        <td style="padding:16px;text-align:center;border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
+        <td style="padding:16px;text-align:center;border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 ## Screenshots
 
@@ -76,6 +113,7 @@ It does not just flag isolated misconfigurations. It models how configuration, p
     ```
     Audit my OpenClaw setup for security risks using trent
     ```
+> If trentclaw found something useful in your setup, **a star ⭐ on this repo** helps other OpenClaw users find it.
 
 ## Advanced setup (recommended for production)
 
