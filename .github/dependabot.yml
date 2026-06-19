@@ -6,6 +6,11 @@ updates:
   # "Require actions to be pinned to a full-length commit SHA" setting. Routine
   # version bumps are grouped into one weekly PR; advisories open PRs immediately.
   - package-ecosystem: "github-actions"
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
     directory: "/"
     schedule:
       interval: "weekly"
