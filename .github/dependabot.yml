@@ -1,0 +1,23 @@
+version: 2
+updates:
+  # Keep the SHA-pinned GitHub Actions current automatically (SEC-44).
+  # Dependabot edits only the `uses:` line — it bumps the 40-char SHA and the
+  # trailing `# vX` comment together, so the pins stay compliant with the repo's
+  # "Require actions to be pinned to a full-length commit SHA" setting. Routine
+  # version bumps are grouped into one weekly PR; advisories open PRs immediately.
+  - package-ecosystem: "github-actions"
+    cooldown:
+      default-days: 7
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
