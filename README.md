@@ -1,7 +1,7 @@
 # Trent OpenClaw Security Assessment
 Free security audit for your OpenClaw 🦞 environment. Finds the gaps isolated checks miss: gateway config, tool permissions, MCP servers, skills, and how they chain into attack paths.
 
-Trent audits your OpenClaw environment across gateway configuration, skill permissions, MCP connections, plugins, channel policies, and local file exposure. It correlates those surfaces to identify privilege escalation paths, secret exposure, and multi-step compromise scenarios, then returns prioritized findings with concrete remediation steps.
+Trent correlates configuration, permissions, connectivity, and data access across these surfaces to identify privilege escalation paths, secret exposure, and multi-step compromise scenarios — returning prioritized findings with concrete remediation steps.
 
 Why now? We've spent years securing modern and AI stacks for fast-moving teams. Sharing some of those learnings with the OpenClaw community.
 
@@ -32,45 +32,39 @@ OpenClaw setups often combine gateway access, tools, MCP servers, plugins, and l
 
 ## Why this is different
 
-OpenClaw environments rarely fail because of one obvious issue in one file. They fail at the boundaries between components.
-A gateway exposed on the wrong interface may not be critical on its own. A skill with broad filesystem access may not be critical on its own. An MCP server using weak transport may not be critical on its own. In combination, they can create a direct path from prompt input to secret access or arbitrary execution.
-Trent is built to evaluate those interactions.
-It does not just flag isolated misconfigurations. It models how configuration, permissions, connectivity, and data access work together across your OpenClaw setup, then prioritizes findings by exploitability and blast radius.
+OpenClaw environments rarely fail because of one obvious issue in one file. They fail at the boundaries between components — a gateway exposed on the wrong interface, a skill with broad filesystem access, and an MCP server using weak transport may each be benign in isolation, but combine into a direct path from prompt input to secret access or arbitrary execution.
 
-<div class="oc-compare-table" style="border:2px solid rgb(236,235,235);border-radius:12px;overflow-x:auto;overflow-y:hidden;max-width:760px;width:100%;margin:0 auto;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:rgb(16,9,3);-webkit-overflow-scrolling:touch;">
-  <table style="width:100%;min-width:720px;border-collapse:collapse;table-layout:fixed;">
-    <thead>
-      <tr>
-        <th style="text-align:left;padding:20px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);width:30%;word-break:break-word;">Feature coverage</th>
-        <th style="text-align:center;padding:20px 16px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);width:23.33%;word-break:break-word;">Scans OpenClaw configuration</th>
-        <th style="text-align:center;padding:20px 16px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);width:23.33%;word-break:break-word;">Scans public skills</th>
-        <th style="text-align:center;padding:20px 16px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);width:23.33%;word-break:break-word;">Scans your custom code and skills</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td style="padding:16px 20px;border-bottom:1px solid rgb(236,235,235);font-weight:600;">
-          <code class="oc-inline-command" style="background:#F7F6F3;padding:3px 8px;border-radius:4px;font-size:14px;white-space:nowrap;">openclaw security audit</code>
-        </td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
-      </tr>
-      <tr style="background:#F7F6F3;">
-        <td style="padding:16px 20px;border-bottom:1px solid rgb(236,235,235);font-weight:600;word-break:break-word;">VirusTotal</td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
-      </tr>
-      <tr>
-        <td style="padding:16px 20px;font-weight:700;color:#F57C33;word-break:break-word;">Trent's Security Assessment Skill</td>
-        <td style="padding:16px;text-align:center;border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
-        <td style="padding:16px;text-align:center;border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
-        <td style="padding:16px;text-align:center;border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+Trent is built to evaluate those interactions. It doesn't just flag isolated misconfigurations — it models how configuration, permissions, connectivity, and data access work together across your OpenClaw setup, then prioritizes findings by exploitability and blast radius.
+
+| Feature coverage | Scans OpenClaw configuration | Scans public skills | Scans your custom code and skills |
+|---|:---:|:---:|:---:|
+| `openclaw security audit` | ✅ | ❌ | ❌ |
+| VirusTotal | ❌ | ✅ | ❌ |
+| **Trent's Security Assessment Skill** | ✅ | ✅ | ✅ |
+
+## How the audit runs
+
+The audit runs in three phases. Each one is local-first, and Phase 2 is gated on your explicit confirmation before anything sensitive is uploaded.
+
+1. **Configuration audit.** The skill reads your OpenClaw config and skill metadata, redacts secrets locally, and sends only the redacted metadata to Trent. Initial findings come back grouped by severity.
+2. **Skill packaging — preview, then upload.** The skill scans your workspace for skills and code projects, shows you the exact list it would upload (files, sizes, and any secrets it redacted), and **waits for your OK**. Nothing leaves your machine until you confirm.
+3. **Deep analysis.** Each uploaded skill is analyzed in the same Trent thread as Phase 1, so chained issues — a permissive skill plus a misconfigured gateway plus a secret in a tool definition — surface as one finding. Recommended fixes are returned as config diffs for you to review and apply; the skill never modifies your files.
+
+See [Permissions & privacy](#permissions--privacy) for the exact data sent in each phase.
+
+## Example finding
+
+Here's the kind of chained finding Trent surfaces — three lower-severity issues that combine into a critical exposure path. Categories drawn from Trent's [behavioral analysis of 2,354 public ClawHub skills](https://trent.ai/blog/clawhub-ai-agent-security-analysis/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw).
+
+> **🔴 CRITICAL — Credential exfiltration via overly-permissive skill**
+>
+> 1. **HIGH** — `OPENAI_API_KEY` stored in plaintext in a skill's config, not in environment variables
+> 2. **HIGH** — same skill requests unscoped `network` and `filesystem` access
+> 3. **MEDIUM** — outbound webhook with no response validation
+>
+> A prompt injection in the skill's `SKILL.md` can cause the agent to read the plaintext key and exfiltrate it through the broad network permission to the unverified webhook. None of the three findings is critical alone — the chain is.
+>
+> **Fix:** move secrets to environment variables, scope `network` permissions to specific hosts, and validate webhook responses against an allowlist.
 
 ## Screenshots
 
@@ -83,17 +77,15 @@ It does not just flag isolated misconfigurations. It models how configuration, p
   <img src="https://github.com/user-attachments/assets/13b7aade-6767-4b35-9ef2-6a7255c1d629" width="720" alt="Security assessment screenshot 3" />
 </p>
 
-
-
 ## Quick start
 
 - **Requires:** A running OpenClaw setup with `~/.openclaw` directory.
 
 1. **Get an API key** at [trent.ai](https://trent.ai/openclaw/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw) → **Get OpenClaw Access**.
-2. **Install the [skill](https://clawhub.ai/trent-ai-release/trentclaw)** (use `openclaw skills update trentclaw` to upgrade):
+2. **Install the [skill](https://clawhub.ai/trent-ai-release/trentclaw)** (use `openclaw skills update @trent-ai-release/trentclaw` to upgrade):
 
     ```bash
-    openclaw skills install trentclaw
+    openclaw skills install @trent-ai-release/trentclaw
     ```
 
 3. **Set your key:**
@@ -102,28 +94,30 @@ It does not just flag isolated misconfigurations. It models how configuration, p
     openclaw config set skills.entries.trent-openclaw-security.apiKey YOUR_TRENT_API_KEY
     ```
 
-3. **Restart Gateway:**
+4. **Restart Gateway:**
 
     ```bash
     openclaw gateway restart
     ```
 
-4. **Run an audit.** Start a new agent session and ask:
+5. **Run an audit.** Start a new agent session and ask:
 
     ```
     Audit my OpenClaw setup for security risks using trent
     ```
-> If trentclaw found something useful in your setup, **a star ⭐ on this repo** helps other OpenClaw users find it.
 
 ## Advanced setup (recommended for production)
 
 Use OpenClaw's secrets management to store your key in a file instead of plaintext config. This is recommended for headless or systemd-managed deployments.
 
-1. **Create a secrets file** with restricted permissions:
+1. **Create a secrets file** with restricted permissions (the prompt below keeps the key out of shell history):
 
     ```bash
-    echo '{ "TRENT_API_KEY": "YOUR_TRENT_API_KEY" }' > ~/.openclaw/.trent.env
-    chmod 600 ~/.openclaw/.trent.env
+    mkdir -p ~/.openclaw
+    printf 'Enter your Trent API key: '
+    read -rs TRENT_API_KEY; echo
+    ( umask 077 && printf '{ "TRENT_API_KEY": "%s" }\n' "$TRENT_API_KEY" > ~/.openclaw/.trent.env )
+    unset TRENT_API_KEY
     ```
 
 2. **Add a file provider and configure the secret:**
@@ -140,19 +134,17 @@ Use OpenClaw's secrets management to store your key in a file instead of plainte
 For more provider options (1Password, HashiCorp Vault, SOPS, and others), see the
 [OpenClaw Secrets documentation](https://docs.openclaw.ai/gateway/secrets).
 
-## API keys
+## Permissions & privacy
 
-Create, view, revoke, and rotate keys at [trent.ai](https://trent.ai/openclaw/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw). After rotating, run the setup steps above again with the new key.
+Trent is explicit about what leaves your machine and asks before uploading anything sensitive. The full flow is in [How the audit runs](#how-the-audit-runs).
 
-## Privacy
+**Phase 1** sends redacted configuration metadata: your `openclaw.json` (with API keys, tokens, and passwords replaced by `[REDACTED]`), skill names and SKILL.md metadata, and file permissions on your config. The body of any SKILL.md, MEMORY.md, SOUL.md, or other workspace file is not included.
 
-- **Sent:** configuration structure, skill names, file permissions.
-- **Stays local:** API keys, tokens, passwords.
+**Phase 2** sends zipped source for the skills and code projects you confirm in the preview. Before zipping, the skill excludes files that commonly carry secrets — env files, private keys, certificates, databases, SSH keys, credential stores. Inside the remaining files, it replaces known secret formats (OpenAI / Anthropic / Slack / GitHub tokens, AWS keys, DB connection strings, and `api_key = "..."` style values) with `[REDACTED]`. Redaction is pattern-based and best-effort — keep custom-format secrets in environment variables rather than hard-coded in skill files. The full exclusion and redaction rules live in [`package_skills.py`](scripts/openclaw_trent/lib/package_skills.py).
 
-All secrets are redacted as `[REDACTED]` before leaving your machine.
+**Stays on your machine:** the Trent API key and any other secrets stored in OpenClaw config or secrets files.
 
-## **Data retention**
-Trent does not store your configuration data after the assessment completes.
+**Data handling and retention.** How Trent stores, processes, and deletes the audit data you send — including retention period and deletion requests — is governed by our [Terms of Service](https://trent.ai/terms-of-service/).
 
 ## Troubleshooting
 
@@ -163,11 +155,13 @@ Trent does not store your configuration data after the assessment completes.
 | Audit times out | Retry or check network connectivity. |
 | Skill not showing | Start a new agent session. |
 
-## **Contributing**
+## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## **About Trent**
+If trentclaw helps with your OpenClaw setup, a star ⭐ on this repo helps other users find it.
+
+## About Trent
 
 Trent secures agentic systems across code, infrastructure, workflows, and runtime behavior. The OpenClaw skill focuses on one layer of that stack: the local agent environment where permissions, tools, secrets, and remote integrations meet.
-To learn more, visit [trent.ai](https://trent.ai/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw).
+To learn more, visit [trent.ai](https://trent.ai/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw).
