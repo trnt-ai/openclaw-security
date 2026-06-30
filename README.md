@@ -47,7 +47,7 @@ Trent is built to evaluate those interactions. It doesn't just flag isolated mis
 The audit runs in three phases. Each one is local-first, and Phase 2 is gated on your explicit confirmation before anything sensitive is uploaded.
 
 1. **Configuration audit.** The skill reads your OpenClaw config and skill metadata, redacts secrets locally, and sends only the redacted metadata to Trent. Initial findings come back grouped by severity.
-2. **Skill packaging — preview, then upload.** The skill scans your workspace for skills and code projects, shows you the exact list it would upload (files, sizes, and any secrets it redacted), and **waits for your OK**. Files like `.env`, `.pem`, `.key`, `.db`, and SSH keys are excluded entirely; known secret formats inside the remaining files are replaced with `[REDACTED]` locally before any upload.
+2. **Skill packaging — preview, then upload.** The skill scans your workspace for skills and code projects, shows you the exact list it would upload (files, sizes, and any secrets it redacted), and **waits for your OK**. Nothing leaves your machine until you confirm.
 3. **Deep analysis.** Each uploaded skill is analyzed in the same Trent thread as Phase 1, so chained issues — a permissive skill plus a misconfigured gateway plus a secret in a tool definition — surface as one finding. Recommended fixes are returned as config diffs for you to review and apply; the skill never modifies your files.
 
 See [Permissions & privacy](#permissions--privacy) for the exact data sent in each phase.
@@ -140,7 +140,7 @@ Trent is explicit about what leaves your machine and asks before uploading anyth
 
 **Phase 1** sends redacted configuration metadata: your `openclaw.json` (with API keys, tokens, and passwords replaced by `[REDACTED]`), skill names and SKILL.md metadata, and file permissions on your config. The body of any SKILL.md, MEMORY.md, SOUL.md, or other workspace file is not included.
 
-**Phase 2** sends zipped source for the skills and code projects you confirm in the preview. Before zipping, the skill excludes files that commonly carry secrets — env files, private keys, certificates, databases, SSH keys, credential stores — and replaces known secret formats (OpenAI / Anthropic / Slack / GitHub tokens, AWS keys, DB connection strings, and `api_key = "..."` style values) with `[REDACTED]` inside the remaining files. Redaction is pattern-based and best-effort; keep custom-format secrets in environment variables rather than hard-coded in skill files. The full exclusion and redaction rules live in [`package_skills.py`](scripts/openclaw_trent/lib/package_skills.py).
+**Phase 2** sends zipped source for the skills and code projects you confirm in the preview. Before zipping, the skill excludes files that commonly carry secrets — env files, private keys, certificates, databases, SSH keys, credential stores. Inside the remaining files, it replaces known secret formats (OpenAI / Anthropic / Slack / GitHub tokens, AWS keys, DB connection strings, and `api_key = "..."` style values) with `[REDACTED]`. Redaction is pattern-based and best-effort — keep custom-format secrets in environment variables rather than hard-coded in skill files. The full exclusion and redaction rules live in [`package_skills.py`](scripts/openclaw_trent/lib/package_skills.py).
 
 **Stays on your machine:** the Trent API key and any other secrets stored in OpenClaw config or secrets files.
 
