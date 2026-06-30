@@ -1,7 +1,7 @@
 # Trent OpenClaw Security Assessment
 Free security audit for your OpenClaw 🦞 environment. Finds the gaps isolated checks miss: gateway config, tool permissions, MCP servers, skills, and how they chain into attack paths.
 
-Trent audits your OpenClaw environment across gateway configuration, skill permissions, MCP connections, plugins, channel policies, and local file exposure. It correlates those surfaces to identify privilege escalation paths, secret exposure, and multi-step compromise scenarios, then returns prioritized findings with concrete remediation steps.
+Trent correlates configuration, permissions, connectivity, and data access across these surfaces to identify privilege escalation paths, secret exposure, and multi-step compromise scenarios — returning prioritized findings with concrete remediation steps.
 
 Why now? We've spent years securing modern and AI stacks for fast-moving teams. Sharing some of those learnings with the OpenClaw community.
 
@@ -36,6 +36,12 @@ OpenClaw environments rarely fail because of one obvious issue in one file. They
 
 Trent is built to evaluate those interactions. It doesn't just flag isolated misconfigurations — it models how configuration, permissions, connectivity, and data access work together across your OpenClaw setup, then prioritizes findings by exploitability and blast radius.
 
+| Feature coverage | Scans OpenClaw configuration | Scans public skills | Scans your custom code and skills |
+|---|:---:|:---:|:---:|
+| `openclaw security audit` | ✅ | ❌ | ❌ |
+| VirusTotal | ❌ | ✅ | ❌ |
+| **Trent's Security Assessment Skill** | ✅ | ✅ | ✅ |
+
 ## How the audit runs
 
 The audit runs in three phases. Each one is local-first, and Phase 2 is gated on your explicit confirmation before anything sensitive is uploaded.
@@ -46,40 +52,19 @@ The audit runs in three phases. Each one is local-first, and Phase 2 is gated on
 
 See [Permissions & privacy](#permissions--privacy) for the exact data sent in each phase.
 
-<div class="oc-compare-table" style="border:2px solid rgb(236,235,235);border-radius:12px;overflow-x:auto;overflow-y:hidden;max-width:760px;width:100%;margin:0 auto;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:rgb(16,9,3);-webkit-overflow-scrolling:touch;">
-  <table style="width:100%;min-width:720px;border-collapse:collapse;table-layout:fixed;">
-    <thead>
-      <tr>
-        <th style="text-align:left;padding:20px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);width:30%;word-break:break-word;">Feature coverage</th>
-        <th style="text-align:center;padding:20px 16px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);width:23.33%;word-break:break-word;">Scans OpenClaw configuration</th>
-        <th style="text-align:center;padding:20px 16px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);width:23.33%;word-break:break-word;">Scans public skills</th>
-        <th style="text-align:center;padding:20px 16px;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;background:#F7F6F3;border-bottom:2px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);width:23.33%;word-break:break-word;">Scans your custom code and skills</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td style="padding:16px 20px;border-bottom:1px solid rgb(236,235,235);font-weight:600;">
-          <code class="oc-inline-command" style="background:#F7F6F3;padding:3px 8px;border-radius:4px;font-size:14px;white-space:nowrap;">openclaw security audit</code>
-        </td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
-      </tr>
-      <tr style="background:#F7F6F3;">
-        <td style="padding:16px 20px;border-bottom:1px solid rgb(236,235,235);font-weight:600;word-break:break-word;">VirusTotal</td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
-        <td style="padding:16px;text-align:center;border-bottom:1px solid rgb(236,235,235);border-left:1px solid rgb(236,235,235);font-size:20px;">❌</td>
-      </tr>
-      <tr>
-        <td style="padding:16px 20px;font-weight:700;color:#F57C33;word-break:break-word;">Trent's Security Assessment Skill</td>
-        <td style="padding:16px;text-align:center;border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
-        <td style="padding:16px;text-align:center;border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
-        <td style="padding:16px;text-align:center;border-left:1px solid rgb(236,235,235);font-size:20px;">✅</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+## Example finding
+
+Here's the kind of chained finding Trent surfaces — three lower-severity issues that combine into a critical exposure path. Categories drawn from Trent's [behavioral analysis of 2,354 public ClawHub skills](https://trent.ai/blog/clawhub-ai-agent-security-analysis/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw).
+
+> **🔴 CRITICAL — Credential exfiltration via overly-permissive skill**
+>
+> 1. **HIGH** — `OPENAI_API_KEY` stored in plaintext in a skill's config, not in environment variables
+> 2. **HIGH** — same skill requests unscoped `network` and `filesystem` access
+> 3. **MEDIUM** — outbound webhook with no response validation
+>
+> A prompt injection in the skill's `SKILL.md` can cause the agent to read the plaintext key and exfiltrate it through the broad network permission to the unverified webhook. None of the three findings is critical alone — the chain is.
+>
+> **Fix:** move secrets to environment variables, scope `network` permissions to specific hosts, and validate webhook responses against an allowlist.
 
 ## Screenshots
 
@@ -120,7 +105,6 @@ See [Permissions & privacy](#permissions--privacy) for the exact data sent in ea
     ```
     Audit my OpenClaw setup for security risks using trent
     ```
-> If trentclaw found something useful in your setup, **a star ⭐ on this repo** helps other OpenClaw users find it.
 
 ## Advanced setup (recommended for production)
 
@@ -174,6 +158,8 @@ Trent is explicit about what leaves your machine and asks before uploading anyth
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+If trentclaw helps with your OpenClaw setup, a star ⭐ on this repo helps other users find it.
 
 ## About Trent
 
