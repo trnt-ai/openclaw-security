@@ -122,7 +122,7 @@ Trent is explicit about what leaves your machine and asks before uploading anyth
 
 **Stays on your machine:** the Trent API key and any other secrets stored in OpenClaw config or secrets files.
 
-**Data handling and retention.** How Trent stores, processes, and deletes the audit data you send — including retention period and deletion requests — is governed by our [Terms of Service](https://trent.ai/terms-of-service/) and [Data Processing Addendum](https://trent.ai/dpa).
+**Data handling and retention.** How Trent stores, processes, and deletes the audit data you send — including retention period and deletion requests — is governed by our [Terms of Service](https://trent.ai/terms-of-service/).
 
 ## Troubleshooting
 
