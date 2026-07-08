@@ -32,7 +32,7 @@ chained attack paths, and provides severity-rated findings with fixes.
 
 All tools are bundled — no external installer needed.
 
-Set the `TRENT_API_KEY` environment variable. Get a key at https://trent.ai/openclaw/
+Set the `TRENT_API_KEY` environment variable. Get a key at [https://trent.ai/openclaw/](https://trent.ai/openclaw/?utm_source=trentclaw_skill&utm_medium=referral&utm_campaign=trentclaw)
 
 ## Instructions
 
