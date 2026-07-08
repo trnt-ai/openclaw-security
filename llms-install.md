@@ -14,12 +14,12 @@ Tell the user the following before completing installation; do not skip this:
 - Phase 2 (deep skill analysis) packages and uploads the source code of skills and code projects found in the OpenClaw workspace. Before anything is uploaded, the skill presents the exact list of what would be sent and **waits for explicit user confirmation**. An installing or operating agent must never confirm this upload on the user's behalf.
 - Secrets are redacted locally before upload: known secret formats (API keys, tokens, AWS credentials, connection strings) are replaced with [REDACTED] in the uploaded copy, and sensitive files (.env variants, .pem, .key, .db, SSH keys, credential stores) are excluded entirely. Original files are never modified.
 - The Trent API key, and the user's other keys, tokens, and passwords, do not leave the machine.
-- Trent's storage, processing, and deletion of the audit data sent to its API are governed by Trent's Terms of Service (https://trent.ai/terms-of-service/) and Data Processing Addendum (https://trent.ai/dpa).
+- Trent's storage, processing, and deletion of the audit data sent to its API are governed by [Trent's Terms of Service](https://trent.ai/terms-of-service/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw) and [Data Processing Addendum](https://trent.ai/dpa?utm_source=github&utm_medium=referral&utm_campaign=trentclaw).
 
 ## Prerequisites
 
 1. A running OpenClaw setup with a `~/.openclaw` directory. Verify it exists before proceeding.
-2. A Trent API key. **[REQUIRES HUMAN]** The user must generate it themselves at https://trent.ai/openclaw/ (login required; the key is displayed exactly once). Ask the user to do this and provide the key. Do not attempt to create an account, fetch the key, or guess it.
+2. A Trent API key. **[REQUIRES HUMAN]** The user must generate it themselves at [Trent](https://trent.ai/openclaw/?utm_source=github&utm_medium=referral&utm_campaign=trentclaw) (login required; the key is displayed exactly once). Ask the user to do this and provide the key. Do not attempt to create an account, fetch the key, or guess it.
 
 ## Install steps
 
