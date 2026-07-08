@@ -78,6 +78,6 @@ The audit runs in three phases and the skill pauses for user confirmation before
 
 - Repository: https://github.com/trnt-ai/trent-openclaw-security-assessment
 - ClawHub listing: https://clawhub.ai/trent-ai-release/trentclaw
-- API key and documentation: https://trent.ai/openclaw/
-- Terms of Service: https://trent.ai/terms-of-service/
-- Data Processing Addendum: https://trent.ai/dpa
+- [API key and documentation](https://trent.ai/openclaw/?utm_source=trentclaw_skill&utm_medium=referral&utm_campaign=trentclaw)
+- [Terms of Service](https://trent.ai/terms-of-service/?utm_source=trentclaw_skill&utm_medium=referral&utm_campaign=trentclaw)
+- [Data Processing Addendum](https://trent.ai/dpa?utm_source=trentclaw_skill&utm_medium=referral&utm_campaign=trentclaw)
