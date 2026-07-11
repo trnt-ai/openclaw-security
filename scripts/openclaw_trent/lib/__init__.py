@@ -1,5 +1,5 @@
-# Copyright (c) 2025-2026 Trent AI. All rights reserved.
-# Licensed under the Trent AI Proprietary License.
+# Copyright 2025-2026 Trent AI
+# SPDX-License-Identifier: Apache-2.0
 
 """Self-contained library modules bundled with the openclaw-trent skill.
 

@@ -161,6 +161,10 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 If trentclaw helps with your OpenClaw setup, a star ⭐ on this repo helps other users find it.
 
+## License
+
+Licensed under the [Apache License, Version 2.0](./LICENSE). Copyright 2025-2026 Trent AI.
+
 ## About Trent
 
 Trent secures agentic systems across code, infrastructure, workflows, and runtime behavior. The OpenClaw skill focuses on one layer of that stack: the local agent environment where permissions, tools, secrets, and remote integrations meet.

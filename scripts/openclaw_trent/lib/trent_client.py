@@ -1,5 +1,5 @@
-# Copyright (c) 2025-2026 Trent AI. All rights reserved.
-# Licensed under the Trent AI Proprietary License.
+# Copyright 2025-2026 Trent AI
+# SPDX-License-Identifier: Apache-2.0
 
 """Minimal Trent API client using stdlib only (no httpx, no third-party deps).
 

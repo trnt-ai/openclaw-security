@@ -1,5 +1,5 @@
-# Copyright (c) 2025-2026 Trent AI. All rights reserved.
-# Licensed under the Trent AI Proprietary License.
+# Copyright 2025-2026 Trent AI
+# SPDX-License-Identifier: Apache-2.0
 
 """Builds the structured prompt for OpenClaw security audits."""
 
