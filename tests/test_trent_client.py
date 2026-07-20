@@ -194,7 +194,7 @@ class TestChatExpirationWarning:
             b"data: [DONE]\n",
         ]
         resp = MagicMock()
-        resp.__iter__ = lambda self: iter(chunks)
+        resp.__iter__.return_value = iter(chunks)
         resp.headers = headers
         resp.__enter__.return_value = resp
         resp.__exit__.return_value = False
