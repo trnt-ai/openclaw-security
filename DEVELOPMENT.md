@@ -6,16 +6,24 @@
 
 ## Testing
 
+Test configuration lives in `pyproject.toml` (`pythonpath = ["scripts"]`), so from
+the repo root:
+
 ```bash
-PYTHONPATH=scripts pytest tests/ -v
+pytest
 ```
 
-Tests cover secret redaction, ZIP packaging, file exclusion, and config collection.
+Tests cover secret redaction, config collection, ZIP packaging, file exclusion, and
+the API client's renewal-URL trust check. They run in CI on every push and pull
+request (see `.github/workflows/test.yml`).
 
-## Syncing from source
+## Source of truth
 
-The source of truth for `SKILL.md` and `scripts/` is the private repo at `plugins/openclaw-trent-plugin/`. After making changes there:
+**This repository is the canonical source of truth** for `SKILL.md`, `scripts/`, and
+`tests/`. Make changes here, and let CI (lint + tests) gate them.
 
-1. Copy `SKILL.md` to this repo root
-2. Sync `scripts/openclaw_trent/` (excluding `__pycache__`, `.pyc`)
-3. Commit and push to this repo
+Trent AI maintains an internal mirror of this plugin inside its monorepo
+(`plugins/openclaw-trent-plugin/`) that is used **only** to publish the skill to
+ClawHub. That mirror is synced **from** this repo — never the other way around — by a
+one-way helper (`tools/sync_from_public.sh` in the monorepo). Changes should not
+originate in the mirror.
