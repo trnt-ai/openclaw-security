@@ -46,21 +46,37 @@ jobs:
           app-id: ${{ vars.DEPENDABOT_AUTOMERGE_APP_ID }}
           private-key: ${{ secrets.DEPENDABOT_AUTOMERGE_APP_KEY }}
 
+      - name: Mint org-scoped token (team review requests only)
+        id: org-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.DEPENDABOT_AUTOMERGE_APP_ID }}
+          private-key: ${{ secrets.DEPENDABOT_AUTOMERGE_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+
       - name: Sweep open Dependabot PRs
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_ROUTE_TOKEN: ${{ steps.org-token.outputs.token }}
           REPO: ${{ github.repository }}
         run: |
           gh pr list -R "$REPO" --author "app/dependabot" --state open \
-            --json number,mergeable,autoMergeRequest,statusCheckRollup,reviewRequests > prs.json
+            --json number,mergeable,autoMergeRequest,reviewRequests,headRefOid > prs.json
           echo "open dependabot PRs: $(jq length prs.json)"
+          FAILURES=0
 
           for n in $(jq -r '.[].number' prs.json); do
             pr=$(jq -c ".[] | select(.number == $n)" prs.json)
             mergeable=$(jq -r '.mergeable' <<<"$pr")
             armed=$(jq -r '.autoMergeRequest != null' <<<"$pr")
-            failing=$(jq -r '[.statusCheckRollup[]? | (.conclusion // "")] | any(. == "FAILURE" or . == "TIMED_OUT" or . == "STARTUP_FAILURE" or . == "CANCELLED")' <<<"$pr")
-            requested=$(jq -r --arg t "$REVIEW_TEAM" '[.reviewRequests[]? | (.slug // "")] | any(. == $t)' <<<"$pr")
+            sha=$(jq -r '.headRefOid' <<<"$pr")
+            failing=$(gh api "repos/$REPO/commits/$sha/check-runs?per_page=100" \
+              --jq '[.check_runs[].conclusion] | any(. == "failure" or . == "timed_out" or . == "startup_failure")' 2>/dev/null || { echo "unknown"; })
+            if [ "$failing" = "unknown" ]; then
+              echo "::error::#$n: could not read check states — counting as sweep failure"
+              FAILURES=$((FAILURES+1))
+            fi
+            requested=$(jq -r --arg t "$REVIEW_TEAM" '[.reviewRequests[]? | (.name // .slug // "")] | any(. == $t)' <<<"$pr")
 
             if [ "$mergeable" = "CONFLICTING" ]; then
               recent=$(gh api "repos/$REPO/issues/$n/comments?per_page=100" \
@@ -75,13 +91,18 @@ jobs:
                  [ "$(gh api "repos/$REPO/pulls/$n/reviews" --paginate --jq '[.[] | select(.state == "APPROVED" and ((.user.login // "") | test("\\[bot\\]$") | not))] | length')" -gt 0 ]; then
               echo "#$n: human approval standing — shepherding (arm auto-merge)" | tee -a "$GITHUB_STEP_SUMMARY"
               gh pr merge --auto --squash "$(gh pr view "$n" -R "$REPO" --json url --jq .url)" \
-                || echo "::warning::#$n: could not arm auto-merge"
+                || { echo "::error::#$n: could not arm auto-merge"; FAILURES=$((FAILURES+1)); }
             elif { [ "$failing" = "true" ] || [ "$armed" = "false" ]; } && [ "$requested" = "false" ]; then
               echo "#$n: needs a human (failing=$failing armed=$armed) — requesting $REVIEW_TEAM review" | tee -a "$GITHUB_STEP_SUMMARY"
-              gh api -X POST "repos/$REPO/pulls/$n/requested_reviewers" \
+              GH_TOKEN="$GH_ROUTE_TOKEN" gh api -X POST "repos/$REPO/pulls/$n/requested_reviewers" \
                 -f "team_reviewers[]=$REVIEW_TEAM" \
-                || echo "::warning::#$n: could not request $REVIEW_TEAM review — does the team have access to this repo?"
+                || { echo "::error::#$n: could not request $REVIEW_TEAM review"; FAILURES=$((FAILURES+1)); }
             else
               echo "#$n: OK (armed=$armed failing=$failing team-review-requested=$requested)" | tee -a "$GITHUB_STEP_SUMMARY"
             fi
           done
+          if [ "$FAILURES" -gt 0 ]; then
+            echo "::error::sweep completed with $FAILURES failure(s) — see log"
+            echo "**Sweep completed with $FAILURES failure(s)** — investigate before trusting this repo's automation." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi

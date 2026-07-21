@@ -179,4 +179,4 @@ jobs:
           done
           GH_TOKEN="$GH_ROUTE_TOKEN" gh api -X POST "repos/$REPO/pulls/$PR_NUMBER/requested_reviewers" \
             -f "team_reviewers[]=$REVIEW_TEAM" \
-            || echo "::warning::could not request $REVIEW_TEAM review — org-scoped token or team access problem"
+            || { echo "::error::could not request $REVIEW_TEAM review — routing is broken, fix before trusting refusals"; exit 1; }
