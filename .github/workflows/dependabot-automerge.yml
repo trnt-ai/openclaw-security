@@ -1,0 +1,182 @@
+# Dependabot auto-merge gate — Dependency Security Program.
+#
+# TEMPLATE-STAMPED FILE: the canonical copy lives in the org's posture tooling
+# (github-security-posture-manager skill, templates/). Repos carry identical
+# copies — the OSS-standard inline pattern — and the posture report flags any
+# copy that drifts from the template. Improve the template, then re-stamp.
+#
+# Approves and enables auto-merge on eligible Dependabot PRs, acting as the
+# Trent-AI-Dependabot-AutoMerge GitHub App. A PR is eligible only if ALL hold:
+#   - author is dependabot[bot] (guarded at the job level)
+#   - update-type is semver patch or minor; majors are never auto-merged
+#     (fetch-metadata reports the LARGEST bump in a grouped PR, so a group
+#     takes the handling of its riskiest member)
+#   - every commit on the PR is authored by dependabot[bot] with a verified
+#     signature. A human push makes the PR ineligible; because the gate
+#     re-runs on every push, it then dismisses its own stale approval and
+#     disables auto-merge, returning the PR to the ordinary human review
+#     path. (This replaces a last-push-approval ruleset, which would have
+#     taxed every human PR in the repo.)
+#
+# Which actions may appear in github-actions bumps is vetted upstream by the
+# org Actions policy (GitHub-created + Marketplace verified creators +
+# explicit allow/block patterns, full-length SHA pinning required).
+# Dependabot can only bump actions already admitted to run, so no second
+# allow-list lives here — the org policy is the single curated gate.
+#
+# Shepherd rule: an ineligible PR (e.g. a major) that has an APPROVING
+# review from a human gets auto-merge armed — the review is the auditable
+# risk decision; automation just removes the second click. No app approval
+# is added, and branch rules still enforce review sufficiency server-side.
+#
+# Auto-merge completing still requires the repo's required status checks
+# (and merge queue, where present) to pass — enforced by rulesets, not here.
+# Repos without required checks must not carry this workflow.
+#
+# DRY_RUN env: flip to "true" to log decisions without approving or merging.
+name: Dependabot auto-merge
+
+on:
+  pull_request:
+  pull_request_review:
+    types: [submitted]
+
+permissions: {}
+
+env:
+  DRY_RUN: "false"
+  # Team that reviews Dependabot PRs the machine path won't handle.
+  # Must have at least Triage access to each participating repo, or the
+  # review request is rejected by GitHub.
+  REVIEW_TEAM: dependency-maintainers
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    steps:
+      - name: Mint app token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.DEPENDABOT_AUTOMERGE_APP_ID }}
+          private-key: ${{ secrets.DEPENDABOT_AUTOMERGE_APP_KEY }}
+
+      - name: Mint org-scoped token (team review requests only)
+        id: org-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.DEPENDABOT_AUTOMERGE_APP_ID }}
+          private-key: ${{ secrets.DEPENDABOT_AUTOMERGE_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+
+      - name: Decide eligibility
+        id: decide
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          ECOSYSTEM: ${{ steps.metadata.outputs.package-ecosystem }}
+          DEPS: ${{ steps.metadata.outputs.dependency-names }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          case "$UPDATE_TYPE" in
+            version-update:semver-patch|version-update:semver-minor)
+              decision=eligible
+              reason="update-type is $UPDATE_TYPE"
+              ;;
+            *)
+              decision=ineligible
+              reason="update-type is '$UPDATE_TYPE' — only semver patch/minor auto-merge"
+              ;;
+          esac
+
+          # Commit provenance: every commit must be authored by dependabot[bot]
+          # and carry a verified signature — a human push disqualifies the PR.
+          if [ "$decision" = eligible ]; then
+            foreign=$(gh api "repos/$REPO/pulls/$PR_NUMBER/commits" --paginate \
+              --jq '[.[] | select(((.author.login // "") != "dependabot[bot]") or (.commit.verification.verified != true)) | .sha[0:7]] | join(",")')
+            if [ -n "$foreign" ]; then
+              decision=ineligible
+              reason="commit(s) not authored+signed by dependabot[bot]: $foreign"
+            fi
+          fi
+
+          mode=$([ "$DRY_RUN" = 'true' ] && echo 'DRY RUN' || echo 'ENFORCE')
+
+          # stdout echo keeps the verdict API-readable (step summaries are UI-only)
+          echo "decision: $decision — $reason [$mode] ($ECOSYSTEM: $DEPS)"
+
+          # Standing approving review from any human (non-bot) account?
+          human_approved=false
+          if [ "$decision" = ineligible ]; then
+            n=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" --paginate \
+              --jq '[.[] | select(.state == "APPROVED" and ((.user.login // "") | test("\\[bot\\]$") | not))] | length')
+            [ "${n:-0}" -gt 0 ] && human_approved=true
+          fi
+
+          echo "decision=$decision" >> "$GITHUB_OUTPUT"
+          echo "human_approved=$human_approved" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Dependabot auto-merge gate"
+            echo "- PR: $PR_URL"
+            echo "- update-type: \`$UPDATE_TYPE\` · ecosystem: \`$ECOSYSTEM\`"
+            echo "- dependencies: \`$DEPS\`"
+            echo "- mode: $mode"
+            echo "- decision: **$decision** — $reason"
+            [ "$human_approved" = true ] && echo "- shepherd: human approval standing — arming auto-merge"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Approve and enable auto-merge
+        if: steps.decide.outputs.decision == 'eligible' && env.DRY_RUN == 'false'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr review --approve "$PR_URL" \
+            --body "Auto-approved under the Dependency Security Program: semver patch/minor, all commits authored+signed by dependabot[bot], gates in the run summary. Merges only when required checks pass."
+          # --auto errors if the PR is already fully mergeable ("clean status");
+          # fall back to a direct merge — the server still enforces all branch
+          # rules on either path, so this can never land an ineligible PR.
+          gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
+
+      # The human made the risk decision (approving review); arm auto-merge so
+      # the PR rides the queue once branch rules are satisfied. No app approval.
+      - name: Shepherd human-approved PR
+        if: steps.decide.outputs.decision == 'ineligible' && steps.decide.outputs.human_approved == 'true' && env.DRY_RUN == 'false'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
+
+      # If a previously-approved PR turns ineligible (e.g. a human pushed a
+      # commit), withdraw the standing approval and disarm auto-merge, then
+      # hand the PR to the humans: request review from the maintainer team so
+      # ineligible updates (majors, provenance failures) land in someone's
+      # review queue instead of idling silently.
+      - name: Disarm and request human review
+        if: steps.decide.outputs.decision == 'ineligible' && steps.decide.outputs.human_approved != 'true' && env.DRY_RUN == 'false'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_ROUTE_TOKEN: ${{ steps.org-token.outputs.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh pr merge --disable-auto "$PR_URL" 2>/dev/null || true
+          for rid in $(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" \
+              --jq '.[] | select(.user.login == "trent-ai-dependabot-automerge[bot]" and .state == "APPROVED") | .id'); do
+            gh api -X PUT "repos/$REPO/pulls/$PR_NUMBER/reviews/$rid/dismissals" \
+              -f message="Auto-dismissed: PR is no longer eligible for auto-merge (see gate run summary)." || true
+          done
+          GH_TOKEN="$GH_ROUTE_TOKEN" gh api -X POST "repos/$REPO/pulls/$PR_NUMBER/requested_reviewers" \
+            -f "team_reviewers[]=$REVIEW_TEAM" \
+            || { echo "::error::could not request $REVIEW_TEAM review — routing is broken, fix before trusting refusals"; exit 1; }
