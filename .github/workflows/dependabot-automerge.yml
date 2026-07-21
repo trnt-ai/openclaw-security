@@ -24,6 +24,11 @@
 # Dependabot can only bump actions already admitted to run, so no second
 # allow-list lives here — the org policy is the single curated gate.
 #
+# Shepherd rule: an ineligible PR (e.g. a major) that has an APPROVING
+# review from a human gets auto-merge armed — the review is the auditable
+# risk decision; automation just removes the second click. No app approval
+# is added, and branch rules still enforce review sufficiency server-side.
+#
 # Auto-merge completing still requires the repo's required status checks
 # (and merge queue, where present) to pass — enforced by rulesets, not here.
 # Repos without required checks must not carry this workflow.
@@ -31,7 +36,10 @@
 # DRY_RUN env: flip to "true" to log decisions without approving or merging.
 name: Dependabot auto-merge
 
-on: pull_request
+on:
+  pull_request:
+  pull_request_review:
+    types: [submitted]
 
 permissions: {}
 
@@ -53,6 +61,14 @@ jobs:
         with:
           app-id: ${{ vars.DEPENDABOT_AUTOMERGE_APP_ID }}
           private-key: ${{ secrets.DEPENDABOT_AUTOMERGE_APP_KEY }}
+
+      - name: Mint org-scoped token (team review requests only)
+        id: org-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.DEPENDABOT_AUTOMERGE_APP_ID }}
+          private-key: ${{ secrets.DEPENDABOT_AUTOMERGE_APP_KEY }}
+          owner: ${{ github.repository_owner }}
 
       - name: Fetch Dependabot metadata
         id: metadata
@@ -98,7 +114,16 @@ jobs:
           # stdout echo keeps the verdict API-readable (step summaries are UI-only)
           echo "decision: $decision — $reason [$mode] ($ECOSYSTEM: $DEPS)"
 
+          # Standing approving review from any human (non-bot) account?
+          human_approved=false
+          if [ "$decision" = ineligible ]; then
+            n=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" --paginate \
+              --jq '[.[] | select(.state == "APPROVED" and ((.user.login // "") | test("\\[bot\\]$") | not))] | length')
+            [ "${n:-0}" -gt 0 ] && human_approved=true
+          fi
+
           echo "decision=$decision" >> "$GITHUB_OUTPUT"
+          echo "human_approved=$human_approved" >> "$GITHUB_OUTPUT"
           {
             echo "### Dependabot auto-merge gate"
             echo "- PR: $PR_URL"
@@ -106,6 +131,7 @@ jobs:
             echo "- dependencies: \`$DEPS\`"
             echo "- mode: $mode"
             echo "- decision: **$decision** — $reason"
+            [ "$human_approved" = true ] && echo "- shepherd: human approval standing — arming auto-merge"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Approve and enable auto-merge
@@ -121,15 +147,26 @@ jobs:
           # rules on either path, so this can never land an ineligible PR.
           gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
 
+      # The human made the risk decision (approving review); arm auto-merge so
+      # the PR rides the queue once branch rules are satisfied. No app approval.
+      - name: Shepherd human-approved PR
+        if: steps.decide.outputs.decision == 'ineligible' && steps.decide.outputs.human_approved == 'true' && env.DRY_RUN == 'false'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
+
       # If a previously-approved PR turns ineligible (e.g. a human pushed a
       # commit), withdraw the standing approval and disarm auto-merge, then
       # hand the PR to the humans: request review from the maintainer team so
       # ineligible updates (majors, provenance failures) land in someone's
       # review queue instead of idling silently.
       - name: Disarm and request human review
-        if: steps.decide.outputs.decision == 'ineligible' && env.DRY_RUN == 'false'
+        if: steps.decide.outputs.decision == 'ineligible' && steps.decide.outputs.human_approved != 'true' && env.DRY_RUN == 'false'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_ROUTE_TOKEN: ${{ steps.org-token.outputs.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
@@ -140,6 +177,6 @@ jobs:
             gh api -X PUT "repos/$REPO/pulls/$PR_NUMBER/reviews/$rid/dismissals" \
               -f message="Auto-dismissed: PR is no longer eligible for auto-merge (see gate run summary)." || true
           done
-          gh api -X POST "repos/$REPO/pulls/$PR_NUMBER/requested_reviewers" \
+          GH_TOKEN="$GH_ROUTE_TOKEN" gh api -X POST "repos/$REPO/pulls/$PR_NUMBER/requested_reviewers" \
             -f "team_reviewers[]=$REVIEW_TEAM" \
-            || echo "::warning::could not request $REVIEW_TEAM review — does the team have access to this repo?"
+            || { echo "::error::could not request $REVIEW_TEAM review — routing is broken, fix before trusting refusals"; exit 1; }
