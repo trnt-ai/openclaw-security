@@ -1,0 +1,19 @@
+# Enrolls this repo in Dependabot auto-merge (Dependency Security Program).
+# All gating logic lives in the org's reusable workflow (github-action-bootstrap);
+# this file only opts in. The @SHA pin is required by org policy and is kept
+# current by this repo's own Dependabot github-actions updates. Merge completion
+# is still gated by this repo's required checks (python-lint, python-test).
+name: Dependabot auto-merge
+
+on: pull_request
+
+permissions: {}
+
+jobs:
+  automerge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    uses: trnt-ai/github-action-bootstrap/.github/workflows/dependabot-automerge.yml@20b5e7cf212bb3b5fe7f55f64258bfd3d945afaa # main 2026-07-21
+    with:
+      dry_run: false
+    secrets:
+      DEPENDABOT_AUTOMERGE_APP_KEY: ${{ secrets.DEPENDABOT_AUTOMERGE_APP_KEY }}

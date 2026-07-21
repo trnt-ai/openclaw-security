@@ -1,0 +1,22 @@
+# Enrolls this repo in the daily Dependabot sweep (Dependency Security Program):
+# comments `@dependabot recreate` on conflicting bot PRs (bounds Dependabot's
+# SLA-less self-heal at one sweep) and requests dependency-maintainers review
+# on bot PRs with failing checks or no armed auto-merge. Logic lives in the
+# org's reusable workflow; this file only opts in and sets the cadence.
+name: Dependabot sweeper
+
+on:
+  schedule:
+    # Weekdays 14:07 UTC — ~7am LA / ~3pm UK in summer (cron is UTC-fixed;
+    # local times drift with DST). Off-the-hour minute avoids GitHub's
+    # top-of-hour scheduler congestion.
+    - cron: "7 14 * * 1-5"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sweep:
+    uses: trnt-ai/github-action-bootstrap/.github/workflows/dependabot-sweeper.yml@20b5e7cf212bb3b5fe7f55f64258bfd3d945afaa # main 2026-07-21
+    secrets:
+      DEPENDABOT_AUTOMERGE_APP_KEY: ${{ secrets.DEPENDABOT_AUTOMERGE_APP_KEY }}
