@@ -71,6 +71,11 @@ jobs:
                 echo "#$n: conflicting — asking Dependabot to recreate" | tee -a "$GITHUB_STEP_SUMMARY"
                 gh pr comment "$n" -R "$REPO" --body "@dependabot recreate"
               fi
+            elif [ "$armed" = "false" ] && [ "$failing" != "true" ] && \
+                 [ "$(gh api "repos/$REPO/pulls/$n/reviews" --paginate --jq '[.[] | select(.state == "APPROVED" and ((.user.login // "") | test("\\[bot\\]$") | not))] | length')" -gt 0 ]; then
+              echo "#$n: human approval standing — shepherding (arm auto-merge)" | tee -a "$GITHUB_STEP_SUMMARY"
+              gh pr merge --auto --squash "$(gh pr view "$n" -R "$REPO" --json url --jq .url)" \
+                || echo "::warning::#$n: could not arm auto-merge"
             elif { [ "$failing" = "true" ] || [ "$armed" = "false" ]; } && [ "$requested" = "false" ]; then
               echo "#$n: needs a human (failing=$failing armed=$armed) — requesting $REVIEW_TEAM review" | tee -a "$GITHUB_STEP_SUMMARY"
               gh api -X POST "repos/$REPO/pulls/$n/requested_reviewers" \
