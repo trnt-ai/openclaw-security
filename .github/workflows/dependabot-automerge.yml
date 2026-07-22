@@ -131,7 +131,7 @@ jobs:
             echo "- dependencies: \`$DEPS\`"
             echo "- mode: $mode"
             echo "- decision: **$decision** — $reason"
-            [ "$human_approved" = true ] && echo "- shepherd: human approval standing — arming auto-merge"
+            if [ "$human_approved" = true ]; then echo "- shepherd: human approval standing — arming auto-merge"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Approve and enable auto-merge
