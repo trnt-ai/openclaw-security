@@ -33,6 +33,20 @@
 # (and merge queue, where present) to pass — enforced by rulesets, not here.
 # Repos without required checks must not carry this workflow.
 #
+# LOOP GUARD: the app acts with its own App token, and App-token events DO
+# trigger workflows (unlike GITHUB_TOKEN, which is recursion-exempt). Without
+# guards, the gate's own approval fires pull_request_review: submitted, which
+# re-runs the gate, which approves again — an infinite self-trigger loop that
+# keeps going even after the PR merges (one notification email per lap; see
+# threat-dashboard PR #485, 2026-07-22: ~1,400 bot approvals post-merge).
+# Three layers stop it:
+#   - job-level: PR must still be open — never act on merged/closed PRs
+#   - job-level: bot-submitted reviews never trigger the gate; the
+#     pull_request_review trigger exists solely to catch *human* shepherd
+#     approvals
+#   - step-level: never re-approve when the app's approval is already
+#     standing, never re-arm auto-merge that is already armed
+#
 # DRY_RUN env: flip to "true" to log decisions without approving or merging.
 name: Dependabot auto-merge
 
@@ -53,7 +67,13 @@ env:
 jobs:
   gate:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    # Open dependabot PRs only, and never re-entered by a bot's own review —
+    # see LOOP GUARD in the header.
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.state == 'open' &&
+      (github.event_name != 'pull_request_review' ||
+       github.event.review.user.type != 'Bot')
     steps:
       - name: Mint app token
         id: app-token
@@ -139,13 +159,29 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
-          gh pr review --approve "$PR_URL" \
-            --body "Auto-approved under the Dependency Security Program: semver patch/minor, all commits authored+signed by dependabot[bot], gates in the run summary. Merges only when required checks pass."
-          # --auto errors if the PR is already fully mergeable ("clean status");
-          # fall back to a direct merge — the server still enforces all branch
-          # rules on either path, so this can never land an ineligible PR.
-          gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
+          # Idempotent approval (LOOP GUARD, step level): a standing app
+          # approval means this run is a re-entry — re-approving would spam a
+          # notification per run and feed the review-event self-trigger loop.
+          standing=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" --paginate \
+            --jq '[.[] | select(.user.login == "trent-ai-dependabot-automerge[bot]" and .state == "APPROVED")] | length')
+          if [ "${standing:-0}" -eq 0 ]; then
+            gh pr review --approve "$PR_URL" \
+              --body "Auto-approved under the Dependency Security Program: semver patch/minor, all commits authored+signed by dependabot[bot], gates in the run summary. Merges only when required checks pass."
+          else
+            echo "app approval already standing — skipping re-approval"
+          fi
+          # Idempotent arming: skip when auto-merge is already enabled.
+          if [ "$(gh pr view "$PR_URL" --json autoMergeRequest --jq '.autoMergeRequest != null')" = "true" ]; then
+            echo "auto-merge already armed — nothing to do"
+          else
+            # --auto errors if the PR is already fully mergeable ("clean status");
+            # fall back to a direct merge — the server still enforces all branch
+            # rules on either path, so this can never land an ineligible PR.
+            gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
+          fi
 
       # The human made the risk decision (approving review); arm auto-merge so
       # the PR rides the queue once branch rules are satisfied. No app approval.
@@ -155,7 +191,12 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
+          # Idempotent arming, same as the eligible path.
+          if [ "$(gh pr view "$PR_URL" --json autoMergeRequest --jq '.autoMergeRequest != null')" = "true" ]; then
+            echo "auto-merge already armed — nothing to do"
+          else
+            gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
+          fi
 
       # If a previously-approved PR turns ineligible (e.g. a human pushed a
       # commit), withdraw the standing approval and disarm auto-merge, then
