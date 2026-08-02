@@ -1,6 +1,6 @@
 ---
 name: trent-openclaw-security
-description: Assess your Agent deployment against security risks using Trent.
+description: Audit your OpenClaw deployment for security risks — misconfigurations, tool permissions, MCP servers, plugins, and chained attack paths — with severity-rated findings and exact fixes.
 version: 1.4.0
 homepage: https://trent.ai
 user-invocable: true
@@ -11,6 +11,10 @@ tags:
   - security
   - assessment
   - threat-modeling
+  - openclaw
+  - security-audit
+  - agent-security
+  - mcp
 metadata:
   openclaw:
     requires:
@@ -27,6 +31,14 @@ metadata:
 
 Audit your OpenClaw deployment for security risks. Identifies misconfigurations,
 chained attack paths, and provides severity-rated findings with fixes.
+- Scans gateway config, skill and tool permissions, MCP servers, and plugins
+- Detects chained attack paths, not just isolated misconfigurations
+- Returns severity-rated findings with copy-paste remediation steps
+
+## When to use this skill
+
+Use after installing new skills or MCP servers, before exposing an agent to
+untrusted input, or as a periodic audit of a production OpenClaw deployment.
 
 ## Setup
 
