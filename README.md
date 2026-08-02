@@ -87,20 +87,25 @@ Here's the kind of chained finding Trent surfaces — three lower-severity issue
     ```bash
     openclaw skills install @trent-ai-release/trentclaw
     ```
+   Or install with the [skills.sh](https://www.skills.sh/trnt-ai/trent-openclaw-security-assessment/trent-openclaw-security) CLI:
 
-3. **Set your key:**
+   ```bash
+   npx skills add https://github.com/trnt-ai/trent-openclaw-security-assessment --skill trent-openclaw-security
+   ```
+
+4. **Set your key:**
 
     ```bash
     openclaw config set skills.entries.trent-openclaw-security.apiKey YOUR_TRENT_API_KEY
     ```
 
-4. **Restart Gateway:**
+5. **Restart Gateway:**
 
     ```bash
     openclaw gateway restart
     ```
 
-5. **Run an audit.** Start a new agent session and ask:
+6. **Run an audit.** Start a new agent session and ask:
 
     ```
     Audit my OpenClaw setup for security risks using trent
